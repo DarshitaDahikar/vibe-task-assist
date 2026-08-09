@@ -19,10 +19,20 @@ const RecommendInput = z.object({
   ),
 });
 
+export type ExtractedItem = {
+  title: string;
+  type: "task" | "deadline" | "event";
+  due_date: string | null;
+  due_time: string | null;
+  priority: "high" | "medium" | "low";
+  people: string[];
+};
+
 export const extractItems = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ExtractInput.parse(input))
   .handler(async ({ data }) => {
     const { callAiJson } = await import("./ai.server");
+
 
     const result = (await callAiJson({
       instructions: [
