@@ -70,9 +70,10 @@ export const extractItems = createServerFn({ method: "POST" })
         },
         required: ["items"],
       },
-    })) as { items: unknown[] };
+    })) as { items: ExtractedItem[] };
 
     return { items: Array.isArray(result.items) ? result.items : [] };
+
   });
 
 export const recommendNext = createServerFn({ method: "POST" })
