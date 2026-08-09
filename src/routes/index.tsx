@@ -69,20 +69,25 @@ const EXAMPLES = [
 
 function Home() {
   const [text, setText] = useState("");
-  const [drafts, setDrafts] = useState<DraftItem[] | null>(null);
+  const [drafts, setDrafts] = useState<ReviewItem[] | null>(null);
   const queryClient = useQueryClient();
   const analyze = useServerFn(extractItems);
 
   const analyzeMutation = useMutation({
     mutationFn: async () => analyze({ data: { text, now: new Date().toString() } }),
     onSuccess: (res) => {
-      const items = (res.items ?? []).map((i) => ({
-        title: i.title,
-        type: i.type,
-        due_date: i.due_date,
-        due_time: i.due_time,
-        priority: i.priority,
-      })) as DraftItem[];
+      const items: ReviewItem[] = (res.items ?? []).map((i) => {
+        const timeDefaulted = !i.due_time;
+        return {
+          title: i.title,
+          type: i.type as ItemType,
+          due_date: i.due_date,
+          due_time: timeDefaulted ? "23:59" : i.due_time,
+          priority: i.priority as Priority,
+          selected: true,
+          timeDefaulted,
+        };
+      });
       setDrafts(items);
       if (items.length === 0) toast("No actionable items found in that text.");
     },
@@ -91,17 +96,21 @@ function Home() {
 
   const saveMutation = useMutation({
     mutationFn: async (items: DraftItem[]) => insertTasks(items),
-    onSuccess: async () => {
+    onSuccess: async (_d, items) => {
       await queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      toast.success("Added to your dashboard");
+      toast.success(`${items.length} item${items.length === 1 ? "" : "s"} synced to your dashboard`);
       setDrafts(null);
       setText("");
     },
     onError: () => toast.error("Could not save these items."),
   });
 
-  const updateDraft = (index: number, patch: Partial<DraftItem>) =>
+  const updateDraft = (index: number, patch: Partial<ReviewItem>) =>
     setDrafts((prev) => prev?.map((d, i) => (i === index ? { ...d, ...patch } : d)) ?? prev);
+
+  const selectedCount = drafts?.filter((d) => d.selected).length ?? 0;
+  const allSelected = !!drafts && drafts.length > 0 && selectedCount === drafts.length;
+
 
   return (
     <div className="hero-surface min-h-screen">
