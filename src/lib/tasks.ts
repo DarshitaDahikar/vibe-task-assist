@@ -1,4 +1,10 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  createTasksFn,
+  deleteTaskFn,
+  listTasksFn,
+  setTaskStatusFn,
+} from "@/lib/tasks.functions";
+
 
 export type Priority = "high" | "medium" | "low";
 export type ItemType = "task" | "deadline" | "event";
