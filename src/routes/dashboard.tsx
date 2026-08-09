@@ -2,14 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowLeft, Brain, Loader2, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Brain, Flame, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfettiBurst } from "@/components/confetti-burst";
 import { ProgressRing } from "@/components/progress-ring";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { recommendNext } from "@/lib/ai.functions";
+import { getStreak, recordCompletion, timeOfDayGreeting } from "@/lib/streak";
 import {
   deleteTask,
   fetchTasks,
@@ -53,6 +55,7 @@ function TaskRow({ task }: { task: Task }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       if (!done) {
+        recordCompletion();
         setCelebrate(true);
         setTimeout(() => setCelebrate(false), 900);
       }
@@ -110,6 +113,11 @@ function Dashboard() {
     error: loadError,
   } = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
 
+  // Re-read on every render so it updates right after a task is completed
+  // (tasks query invalidation triggers this re-render).
+  const streak = getStreak();
+  const greeting = timeOfDayGreeting();
+
   const today = todayISO();
   const pending = tasks.filter((t) => t.status === "pending");
   const todays = tasks.filter((t) => t.due_date === today || (!t.due_date && t.status === "pending"));
@@ -146,10 +154,23 @@ function Dashboard() {
             <ArrowLeft className="size-4" /> Paste something new
           </Link>
         </Button>
-        <span className="text-sm font-semibold text-muted-foreground">TaskPilot</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-semibold text-muted-foreground">TaskPilot</span>
+          <ThemeToggle />
+        </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-5 pb-24">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-bold sm:text-2xl">{greeting} 👋</h1>
+          {streak > 0 && (
+            <span className="surface-card flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-priority-medium">
+              <Flame className="size-4 fill-priority-medium/20" />
+              {streak} day{streak === 1 ? "" : "s"} streak
+            </span>
+          )}
+        </div>
+
         <Button
           size="lg"
           className="h-16 w-full rounded-2xl text-base font-bold shadow-lift sm:text-lg"
