@@ -1,10 +1,10 @@
-const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/responses";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 type JsonSchema = Record<string, unknown>;
 
 /**
- * Calls the Lovable AI Gateway Responses API and returns the final text.
- * Always streams (required for this endpoint) and accumulates deltas server-side.
+ * Calls the Anthropic API directly using your own API key and returns parsed JSON.
+ * Uses tool-calling to force a structured JSON response matching the given schema.
  */
 export async function callAiJson(params: {
   instructions: string;
@@ -12,79 +12,47 @@ export async function callAiJson(params: {
   schemaName: string;
   schema: JsonSchema;
 }): Promise<unknown> {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) throw new Error("AI is not configured");
+  const apiKey = process.env["ANTHROPIC_API_KEY"];
+  if (!apiKey) throw new Error("AI is not configured — missing ANTHROPIC_API_KEY.");
 
-  const res = await fetch(GATEWAY_URL, {
+  const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "fetch",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: "openai/gpt-5.6-sol",
-      instructions: params.instructions,
-      input: params.input,
-      stream: true,
-      reasoning: { effort: "low", summary: "auto" },
-      text: {
-        format: {
-          type: "json_schema",
+      model: "claude-sonnet-4-6",
+      max_tokens: 2000,
+      system: params.instructions,
+      messages: [{ role: "user", content: params.input }],
+      tools: [
+        {
           name: params.schemaName,
-          strict: true,
-          schema: params.schema,
+          description: "Return the extracted/recommended data in this exact structure.",
+          input_schema: params.schema,
         },
-      },
+      ],
+      tool_choice: { type: "tool", name: params.schemaName },
     }),
   });
 
-  if (!res.ok || !res.body) {
+  if (!res.ok) {
     const detail = await res.text().catch(() => "");
     if (res.status === 429) throw new Error("AI is busy right now — please try again in a moment.");
-    if (res.status === 402) throw new Error("AI credits are exhausted. Please add credits to continue.");
+    if (res.status === 401) throw new Error("AI key is invalid. Please check your ANTHROPIC_API_KEY.");
     throw new Error(`AI request failed (${res.status}): ${detail.slice(0, 300)}`);
   }
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let text = "";
+  const data = (await res.json()) as {
+    content?: { type: string; input?: unknown }[];
+  };
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const payload = line.slice(5).trim();
-      if (!payload || payload === "[DONE]") continue;
-      try {
-        const evt = JSON.parse(payload) as {
-          type?: string;
-          delta?: string;
-          response?: { output_text?: string };
-        };
-        if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") {
-          text += evt.delta;
-        } else if (evt.type === "response.completed" && evt.response?.output_text) {
-          if (!text) text = evt.response.output_text;
-        }
-      } catch {
-        // ignore malformed keepalive chunks
-      }
-    }
+  const toolBlock = data.content?.find((c) => c.type === "tool_use");
+  if (!toolBlock || typeof toolBlock.input !== "object") {
+    throw new Error("The AI returned an unexpected response. Please try again.");
   }
 
-  if (!text.trim()) throw new Error("The AI returned an empty response. Please try again.");
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error("Could not read the AI response.");
-  }
+  return toolBlock.input;
 }
