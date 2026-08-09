@@ -1,32 +1,39 @@
-const COLORS = ["#f97362", "#f5b942", "#4ade80", "#60a5fa", "#c084fc"];
+/** Small animated ring showing a 0-100 percentage, e.g. today's completion rate. */
+export function ProgressRing({ percent, size = 56 }: { percent: number; size?: number }) {
+  const stroke = 5;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const clamped = Math.max(0, Math.min(100, percent));
+  const offset = circumference - (clamped / 100) * circumference;
 
-/**
- * Small celebratory confetti burst, positioned via CSS around wherever it's rendered.
- * Purely decorative — renders a handful of pieces that fall and fade, then unmounts itself.
- */
-export function ConfettiBurst() {
-  const pieces = Array.from({ length: 14 });
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 overflow-visible">
-      {pieces.map((_, i) => {
-        const left = 10 + Math.random() * 80;
-        const delay = Math.random() * 0.15;
-        const color = COLORS[i % COLORS.length];
-        const size = 6 + Math.random() * 4;
-        return (
-          <span
-            key={i}
-            className="animate-confetti-piece absolute top-0 rounded-sm"
-            style={{
-              left: `${left}%`,
-              width: size,
-              height: size,
-              backgroundColor: color,
-              animationDelay: `${delay}s`,
-            }}
-          />
-        );
-      })}
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          className="text-border"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          className="text-primary transition-[stroke-dashoffset] duration-700 ease-out"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold">
+        {Math.round(clamped)}%
+      </span>
     </div>
   );
 }
