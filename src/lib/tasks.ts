@@ -1,9 +1,27 @@
-import {
-  createTasksFn,
-  deleteTaskFn,
-  listTasksFn,
-  setTaskStatusFn,
-} from "@/lib/tasks.functions";
+const STORAGE_KEY = "taskpilot:tasks";
+
+function readTasksFromStorage(): Task[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeTasksToStorage(tasks: Task[]) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+function makeId() {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 
 export type Priority = "high" | "medium" | "low";
@@ -114,19 +132,33 @@ export function formatWhen(due_date: string | null, due_time: string | null) {
 }
 
 export async function fetchTasks(): Promise<Task[]> {
-  const { tasks } = await listTasksFn();
-  return tasks as Task[];
+  return readTasksFromStorage();
 }
 
 export async function insertTasks(items: DraftItem[]) {
-  await createTasksFn({ data: { items } });
+  const existing = readTasksFromStorage();
+  const now = new Date().toISOString();
+  const newTasks: Task[] = items.map((item) => ({
+    id: makeId(),
+    title: item.title,
+    type: item.type,
+    due_date: item.due_date,
+    due_time: item.due_time,
+    priority: item.priority,
+    status: "pending",
+    created_at: now,
+  }));
+  writeTasksToStorage([...existing, ...newTasks]);
 }
 
 export async function setTaskStatus(id: string, status: "pending" | "complete") {
-  await setTaskStatusFn({ data: { id, status } });
+  const existing = readTasksFromStorage();
+  writeTasksToStorage(
+    existing.map((t) => (t.id === id ? { ...t, status } : t)),
+  );
 }
 
 export async function deleteTask(id: string) {
-  await deleteTaskFn({ data: { id } });
+  const existing = readTasksFromStorage();
+  writeTasksToStorage(existing.filter((t) => t.id !== id));
 }
-
