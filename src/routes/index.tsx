@@ -127,57 +127,62 @@ function Home() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 pb-24">
-        <section className="pt-6 text-center sm:pt-12">
-          <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
-            Turn scattered messages into a clear to-do list
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-pretty text-base text-muted-foreground">
-            Your deadlines live in WhatsApp groups, email threads and notice boards. Paste any of
-            it here — TaskPilot pulls out the tasks, dates and priorities, then tells you what to
-            do next.
-          </p>
-        </section>
+        {!drafts && (
+          <>
+            <section className="pt-6 text-center sm:pt-12">
+              <h1 className="text-balance text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">
+                Turn scattered messages into a clear to-do list
+              </h1>
+              <p className="mx-auto mt-4 max-w-xl text-pretty text-base text-muted-foreground">
+                Your deadlines live in WhatsApp groups, email threads and notice boards. Paste any
+                of it here — TaskPilot pulls out the tasks, dates and priorities, then tells you
+                what to do next.
+              </p>
+            </section>
 
-        <section className="surface-card mt-8 p-4 sm:p-6">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Paste your message, email, or notice..."
-            className="min-h-40 resize-none border-0 bg-secondary/50 text-base focus-visible:ring-1"
-          />
+            <section className="surface-card mt-8 p-4 sm:p-6">
+              <Textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Paste your message, email, or notice..."
+                className="min-h-40 resize-none border-0 bg-secondary/50 text-base focus-visible:ring-1"
+              />
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {EXAMPLES.map((ex) => (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {EXAMPLES.map((ex) => (
+                  <Button
+                    key={ex.label}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => setText(ex.text)}
+                  >
+                    {ex.label}
+                  </Button>
+                ))}
+              </div>
+
               <Button
-                key={ex.label}
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-full"
-                onClick={() => setText(ex.text)}
+                size="lg"
+                className="mt-5 w-full text-base shadow-soft"
+                disabled={!text.trim() || analyzeMutation.isPending}
+                onClick={() => analyzeMutation.mutate()}
               >
-                {ex.label}
+                {analyzeMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" /> Reading your message...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-4" /> Analyze
+                  </>
+                )}
               </Button>
-            ))}
-          </div>
+            </section>
+          </>
+        )}
 
-          <Button
-            size="lg"
-            className="mt-5 w-full text-base shadow-soft"
-            disabled={!text.trim() || analyzeMutation.isPending}
-            onClick={() => analyzeMutation.mutate()}
-          >
-            {analyzeMutation.isPending ? (
-              <>
-                <Loader2 className="size-4 animate-spin" /> Reading your message...
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-4" /> Analyze
-              </>
-            )}
-          </Button>
-        </section>
 
         {drafts && (
           <section className="surface-card mt-6 p-4 sm:p-6">
