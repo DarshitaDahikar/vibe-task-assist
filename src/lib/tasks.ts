@@ -108,36 +108,19 @@ export function formatWhen(due_date: string | null, due_time: string | null) {
 }
 
 export async function fetchTasks(): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("*")
-    .order("due_date", { ascending: true, nullsFirst: false })
-    .order("due_time", { ascending: true, nullsFirst: true })
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as Task[];
+  const { tasks } = await listTasksFn();
+  return tasks as Task[];
 }
 
 export async function insertTasks(items: DraftItem[]) {
-  const { error } = await supabase.from("tasks").insert(
-    items.map((i) => ({
-      title: i.title,
-      type: i.type,
-      due_date: i.due_date,
-      due_time: i.due_time,
-      priority: i.priority,
-      status: "pending",
-    })),
-  );
-  if (error) throw error;
+  await createTasksFn({ data: { items } });
 }
 
 export async function setTaskStatus(id: string, status: "pending" | "complete") {
-  const { error } = await supabase.from("tasks").update({ status }).eq("id", id);
-  if (error) throw error;
+  await setTaskStatusFn({ data: { id, status } });
 }
 
 export async function deleteTask(id: string) {
-  const { error } = await supabase.from("tasks").delete().eq("id", id);
-  if (error) throw error;
+  await deleteTaskFn({ data: { id } });
 }
+
