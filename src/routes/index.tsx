@@ -102,7 +102,7 @@ function Home() {
       setDrafts(null);
       setText("");
     },
-    onError: () => toast.error("Could not save these items."),
+    onError: (e: Error) => toast.error(e.message || "Could not save these items."),
   });
 
   const updateDraft = (index: number, patch: Partial<ReviewItem>) =>
