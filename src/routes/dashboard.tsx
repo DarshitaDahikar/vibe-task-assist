@@ -7,6 +7,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfettiBurst } from "@/components/confetti-burst";
+import { ProgressRing } from "@/components/progress-ring";
 import { recommendNext } from "@/lib/ai.functions";
 import {
   deleteTask,
@@ -44,10 +46,17 @@ export const Route = createFileRoute("/dashboard")({
 function TaskRow({ task }: { task: Task }) {
   const queryClient = useQueryClient();
   const done = task.status === "complete";
+  const [celebrate, setCelebrate] = useState(false);
 
   const toggle = useMutation({
     mutationFn: async () => setTaskStatus(task.id, done ? "pending" : "complete"),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      if (!done) {
+        setCelebrate(true);
+        setTimeout(() => setCelebrate(false), 900);
+      }
+    },
   });
   const remove = useMutation({
     mutationFn: async () => deleteTask(task.id),
@@ -55,7 +64,8 @@ function TaskRow({ task }: { task: Task }) {
   });
 
   return (
-    <li className="surface-card flex items-center gap-3 p-3.5 transition-shadow hover:shadow-lift">
+    <li className="animate-task-in surface-card relative flex items-center gap-3 overflow-visible p-3.5 transition-shadow hover:shadow-lift">
+      {celebrate && <ConfettiBurst />}
       <span className={`h-9 w-1.5 shrink-0 rounded-full ${priorityDot[task.priority]}`} />
       <Checkbox
         checked={done}
@@ -105,6 +115,10 @@ function Dashboard() {
   const todays = tasks.filter((t) => t.due_date === today || (!t.due_date && t.status === "pending"));
   const upcoming = tasks.filter((t) => t.due_date && t.due_date > today);
   const past = tasks.filter((t) => t.due_date && t.due_date < today);
+
+  const todaysAll = tasks.filter((t) => t.due_date === today);
+  const todaysDone = todaysAll.filter((t) => t.status === "complete").length;
+  const todaysPercent = todaysAll.length > 0 ? (todaysDone / todaysAll.length) * 100 : 0;
 
   const ask = useMutation({
     mutationFn: async () =>
@@ -169,7 +183,25 @@ function Dashboard() {
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_18rem]">
 
           <div className="space-y-8">
-            <Section title="Today" tasks={todays} isLoading={isLoading} empty="Nothing due today." />
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Today
+                </h2>
+                {todaysAll.length > 0 && <ProgressRing percent={todaysPercent} size={40} />}
+              </div>
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : todays.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nothing due today.</p>
+              ) : (
+                <ul className="space-y-2.5">
+                  {todays.map((t) => (
+                    <TaskRow key={t.id} task={t} />
+                  ))}
+                </ul>
+              )}
+            </section>
             <Section
               title="Upcoming"
               tasks={upcoming}
