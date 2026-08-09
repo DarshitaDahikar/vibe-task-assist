@@ -1,12 +1,13 @@
 TaskPilot — Turn Scattered Messages into a Clear To-Do List
 
-THE PROBLEM
+THE PROBLEM : 
 Students and young professionals get important deadlines and responsibilities scattered across WhatsApp messages, emails, and college notices. Nothing gets organized automatically — you have to manually read, remember, and schedule everything yourself.
 
-THE SOLUTION
+THE SOLUTION : 
 TaskPilot is an AI assistant that reads any pasted message (a WhatsApp notice, an email, a college announcement) and automatically extracts tasks, deadlines, and events — then tells you exactly what to work on right now, with clear reasoning.
 
 ✨ KEY FEATURES :
+
 🤖 AI-Powered Extraction :
 - Paste any unstructured message and automatically convert it into structured tasks, deadlines, and events.
 🛡️ Mandatory Review & Approve screen :
