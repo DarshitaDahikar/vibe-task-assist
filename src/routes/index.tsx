@@ -246,9 +246,13 @@ function Home() {
 
                     <div className="mt-2 flex flex-wrap items-center gap-2 pl-7">
                       <span
-                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}
                       >
-                        {pill.emoji} {pill.label}
+                        <span
+                          aria-hidden
+                          className="inline-block size-2 rounded-full bg-current"
+                        />
+                        {pill.label}
                       </span>
                       <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
                         {typeLabel[item.type]}
@@ -259,10 +263,12 @@ function Home() {
                         </span>
                       )}
                       {item.timeDefaulted && (
-                        <span className="rounded-full border border-warning/40 bg-warning/12 px-2 py-0.5 text-[11px] font-semibold text-warning">
-                          ⚠️ Missing exact time — defaulted to 11:59 PM
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-warning/40 bg-warning/12 px-2 py-0.5 text-[11px] font-semibold text-warning">
+                          <AlertTriangle className="size-3" aria-hidden />
+                          Missing exact time — defaulted to 11:59 PM
                         </span>
                       )}
+
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 pl-7 sm:grid-cols-4">
