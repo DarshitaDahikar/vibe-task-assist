@@ -94,7 +94,11 @@ function Dashboard() {
   const [pick, setPick] = useState<{ title: string; reason: string } | null>(null);
   const recommend = useServerFn(recommendNext);
 
-  const { data: tasks = [], isLoading } = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
+  const {
+    data: tasks = [],
+    isLoading,
+    error: loadError,
+  } = useQuery({ queryKey: ["tasks"], queryFn: fetchTasks });
 
   const today = todayISO();
   const pending = tasks.filter((t) => t.status === "pending");
