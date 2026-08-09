@@ -160,7 +160,14 @@ function Dashboard() {
           </div>
         )}
 
+        {loadError && (
+          <div className="surface-card mt-4 border-destructive/40 bg-destructive/5 p-4 text-sm font-medium text-destructive">
+            {(loadError as Error).message || "Could not load your tasks."}
+          </div>
+        )}
+
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_18rem]">
+
           <div className="space-y-8">
             <Section title="Today" tasks={todays} isLoading={isLoading} empty="Nothing due today." />
             <Section
