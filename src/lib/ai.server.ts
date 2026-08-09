@@ -1,47 +1,11 @@
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 type JsonSchema = Record<string, unknown>;
 
 /**
- * Gemini's schema format is a subset of OpenAPI and rejects unsupported keys
- * like "additionalProperties". Strip those recursively before sending.
- */
-function toGeminiSchema(schema: JsonSchema): JsonSchema {
-  const clone: JsonSchema = {};
-
-  // Handle JSON Schema's nullable-via-array syntax: "type": ["string", "null"]
-  // Gemini needs: "type": "string", "nullable": true
-  if (Array.isArray(schema.type)) {
-    const types = schema.type as string[];
-    const nonNull = types.find((t) => t !== "null");
-    if (nonNull) clone.type = nonNull;
-    if (types.includes("null")) clone.nullable = true;
-  }
-
-  for (const [key, value] of Object.entries(schema)) {
-    if (key === "additionalProperties" || key === "type") continue;
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      clone[key] = toGeminiSchema(value as JsonSchema);
-    } else if (Array.isArray(value)) {
-      clone[key] = value.map((v) =>
-        v && typeof v === "object" ? toGeminiSchema(v as JsonSchema) : v,
-      );
-    } else {
-      clone[key] = value;
-    }
-  }
-
-  // If type wasn't an array, just copy it through as-is
-  if (!Array.isArray(schema.type) && schema.type !== undefined) {
-    clone.type = schema.type;
-  }
-
-  return clone;
-}
-
-/**
- * Calls Google's free Gemini API and returns parsed JSON matching the given schema.
- * Uses Gemini's built-in structured output (responseSchema) — no paid tier required.
+ * Calls Groq's free API (OpenAI-compatible) and returns parsed JSON.
+ * Uses JSON mode plus explicit schema instructions in the prompt, since
+ * Groq's JSON mode guarantees valid JSON but doesn't enforce a specific shape.
  */
 export async function callAiJson(params: {
   instructions: string;
@@ -49,19 +13,28 @@ export async function callAiJson(params: {
   schemaName: string;
   schema: JsonSchema;
 }): Promise<unknown> {
-  const apiKey = process.env["GEMINI_API_KEY"];
-  if (!apiKey) throw new Error("AI is not configured — missing GEMINI_API_KEY.");
+  const apiKey = process.env["GROQ_API_KEY"];
+  if (!apiKey) throw new Error("AI is not configured — missing GROQ_API_KEY.");
 
-  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+  const systemPrompt = `${params.instructions}
+
+You must respond with ONLY valid JSON matching this exact schema (no markdown, no code fences, no extra text):
+${JSON.stringify(params.schema, null, 2)}`;
+
+  const res = await fetch(GROQ_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      systemInstruction: { parts: [{ text: params.instructions }] },
-      contents: [{ role: "user", parts: [{ text: params.input }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: toGeminiSchema(params.schema),
-      },
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: params.input },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2,
     }),
   });
 
@@ -71,10 +44,10 @@ export async function callAiJson(params: {
   }
 
   const data = (await res.json()) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
+    choices?: { message?: { content?: string } }[];
   };
 
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data.choices?.[0]?.message?.content;
   if (!text) throw new Error("The AI returned an empty response. Please try again.");
 
   try {
