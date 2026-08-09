@@ -40,6 +40,40 @@ export const typeLabel: Record<ItemType, string> = {
   event: "Event",
 };
 
+export const priorityPill: Record<Priority, { label: string; emoji: string; className: string }> = {
+  high: {
+    label: "High",
+    emoji: "🔴",
+    className: "bg-priority-high/12 text-priority-high border-priority-high/35",
+  },
+  medium: {
+    label: "Medium",
+    emoji: "🟠",
+    className: "bg-priority-medium/15 text-priority-medium border-priority-medium/40",
+  },
+  low: {
+    label: "Low",
+    emoji: "🟢",
+    className: "bg-priority-low/18 text-priority-low border-priority-low/45",
+  },
+};
+
+/** "Today", "Tomorrow", "In 3 days", "2 days ago" — relative to the local day. */
+export function relativeDay(due_date: string | null): string | null {
+  if (!due_date) return null;
+  const [y, m, d] = due_date.split("-").map(Number);
+  const target = new Date(y!, (m ?? 1) - 1, d ?? 1);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const diff = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Tomorrow";
+  if (diff === -1) return "Yesterday";
+  if (diff > 1) return `In ${diff} days`;
+  return `${Math.abs(diff)} days ago`;
+}
+
+
 export function todayISO() {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
