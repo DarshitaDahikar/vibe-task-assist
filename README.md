@@ -1,6 +1,6 @@
 TaskPilot — Turn Scattered Messages into a Clear To-Do List
 
-THE PROBLEM : 
+THE PROBLEM :
 Students and young professionals get important deadlines and responsibilities scattered across WhatsApp messages, emails, and college notices. Nothing gets organized automatically — you have to manually read, remember, and schedule everything yourself.
 
 THE SOLUTION : 
@@ -37,4 +37,5 @@ Automatic recurring task detection
 Personalized productivity insights
 
 LIVE LINK: https://vibe-task-assist.vercel.app
+
 GITHUB: https://github.com/DarshitaDahikar/vibe-task-assist
