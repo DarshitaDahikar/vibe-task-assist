@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,12 +19,16 @@ import {
 import { extractItems } from "@/lib/ai.functions";
 import {
   insertTasks,
-  priorityBadge,
+  priorityPill,
+  relativeDay,
   typeLabel,
   type DraftItem,
   type ItemType,
   type Priority,
 } from "@/lib/tasks";
+
+type ReviewItem = DraftItem & { selected: boolean; timeDefaulted: boolean };
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
