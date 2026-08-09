@@ -1,5 +1,5 @@
 
-Ai.server · TS
+Ai.server final · TS
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
  
 type JsonSchema = Record<string, unknown>;
