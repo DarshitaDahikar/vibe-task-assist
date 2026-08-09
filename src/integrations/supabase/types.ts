@@ -20,6 +20,7 @@ export type Database = {
           due_date: string | null
           due_time: string | null
           id: string
+          owner_token: string
           priority: string
           status: string
           title: string
@@ -30,6 +31,7 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          owner_token?: string
           priority?: string
           status?: string
           title: string
@@ -40,6 +42,7 @@ export type Database = {
           due_date?: string | null
           due_time?: string | null
           id?: string
+          owner_token?: string
           priority?: string
           status?: string
           title?: string
