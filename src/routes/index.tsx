@@ -181,97 +181,157 @@ function Home() {
 
         {drafts && (
           <section className="surface-card mt-6 p-4 sm:p-6">
-            <h2 className="text-lg font-bold">
-              I found {drafts.length} actionable item{drafts.length === 1 ? "" : "s"}
+            <h2 className="text-balance text-xl font-bold">
+              I found {drafts.length} actionable item{drafts.length === 1 ? "" : "s"} — Review &amp;
+              Approve before syncing.
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Tweak anything below before saving it to your dashboard.
+              Edit titles, fix dates, and uncheck anything you don't want. Only checked items are
+              added to your dashboard.
             </p>
 
-            <ul className="mt-5 space-y-3">
-              {drafts.map((item, i) => (
-                <li key={i} className="rounded-xl border border-border bg-secondary/30 p-3">
-                  <div className="flex items-start gap-2">
-                    <span
-                      className={`mt-1 shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${priorityBadge[item.priority]}`}
-                    >
-                      {typeLabel[item.type]}
-                    </span>
-                    <Input
-                      value={item.title}
-                      onChange={(e) => updateDraft(i, { title: e.target.value })}
-                      className="h-9 flex-1 bg-card font-medium"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground"
-                      onClick={() => setDrafts((p) => p?.filter((_, x) => x !== i) ?? p)}
-                      aria-label="Remove item"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
+            <label className="mt-5 flex w-fit cursor-pointer items-center gap-2 text-sm font-medium">
+              <Checkbox
+                checked={allSelected}
+                onCheckedChange={(v) =>
+                  setDrafts((p) => p?.map((d) => ({ ...d, selected: v === true })) ?? p)
+                }
+              />
+              Select All
+              <span className="text-muted-foreground">
+                ({selectedCount}/{drafts.length} selected)
+              </span>
+            </label>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <Input
-                      type="date"
-                      value={item.due_date ?? ""}
-                      onChange={(e) => updateDraft(i, { due_date: e.target.value || null })}
-                      className="h-9 bg-card"
-                    />
-                    <Input
-                      type="time"
-                      value={item.due_time?.slice(0, 5) ?? ""}
-                      onChange={(e) => updateDraft(i, { due_time: e.target.value || null })}
-                      className="h-9 bg-card"
-                    />
-                    <Select
-                      value={item.priority}
-                      onValueChange={(v) => updateDraft(i, { priority: v as Priority })}
-                    >
-                      <SelectTrigger className="h-9 bg-card">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">High priority</SelectItem>
-                        <SelectItem value="medium">Medium priority</SelectItem>
-                        <SelectItem value="low">Low priority</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={item.type}
-                      onValueChange={(v) => updateDraft(i, { type: v as ItemType })}
-                    >
-                      <SelectTrigger className="h-9 bg-card">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="task">Task</SelectItem>
-                        <SelectItem value="deadline">Deadline</SelectItem>
-                        <SelectItem value="event">Event</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </li>
-              ))}
+            <ul className="mt-4 space-y-3">
+              {drafts.map((item, i) => {
+                const pill = priorityPill[item.priority];
+                const countdown = relativeDay(item.due_date);
+                return (
+                  <li
+                    key={i}
+                    className={`rounded-xl border p-3 transition-colors ${
+                      item.selected
+                        ? "border-border bg-secondary/30"
+                        : "border-dashed border-border bg-secondary/10 opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        checked={item.selected}
+                        onCheckedChange={(v) => updateDraft(i, { selected: v === true })}
+                        className="mt-2.5"
+                        aria-label={`Include ${item.title}`}
+                      />
+                      <Input
+                        value={item.title}
+                        onChange={(e) => updateDraft(i, { title: e.target.value })}
+                        className="h-9 flex-1 bg-card font-medium"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground"
+                        onClick={() => setDrafts((p) => p?.filter((_, x) => x !== i) ?? p)}
+                        aria-label="Remove item"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap items-center gap-2 pl-7">
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${pill.className}`}
+                      >
+                        {pill.emoji} {pill.label}
+                      </span>
+                      <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                        {typeLabel[item.type]}
+                      </span>
+                      {countdown && (
+                        <span className="text-xs font-medium text-muted-foreground">
+                          {countdown}
+                        </span>
+                      )}
+                      {item.timeDefaulted && (
+                        <span className="rounded-full border border-warning/40 bg-warning/12 px-2 py-0.5 text-[11px] font-semibold text-warning">
+                          ⚠️ Missing exact time — defaulted to 11:59 PM
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 pl-7 sm:grid-cols-4">
+                      <Input
+                        type="date"
+                        value={item.due_date ?? ""}
+                        onChange={(e) => updateDraft(i, { due_date: e.target.value || null })}
+                        className="h-9 bg-card"
+                      />
+                      <Input
+                        type="time"
+                        value={item.due_time?.slice(0, 5) ?? ""}
+                        onChange={(e) =>
+                          updateDraft(i, {
+                            due_time: e.target.value || null,
+                            timeDefaulted: false,
+                          })
+                        }
+                        className="h-9 bg-card"
+                      />
+                      <Select
+                        value={item.priority}
+                        onValueChange={(v) => updateDraft(i, { priority: v as Priority })}
+                      >
+                        <SelectTrigger className="h-9 bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">🔴 High priority</SelectItem>
+                          <SelectItem value="medium">🟠 Medium priority</SelectItem>
+                          <SelectItem value="low">🟢 Low priority</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Select
+                        value={item.type}
+                        onValueChange={(v) => updateDraft(i, { type: v as ItemType })}
+                      >
+                        <SelectTrigger className="h-9 bg-card">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="task">Task</SelectItem>
+                          <SelectItem value="deadline">Deadline</SelectItem>
+                          <SelectItem value="event">Event</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               <Button
                 className="flex-1"
-                disabled={drafts.length === 0 || saveMutation.isPending}
-                onClick={() => saveMutation.mutate(drafts)}
+                disabled={selectedCount === 0 || saveMutation.isPending}
+                onClick={() =>
+                  saveMutation.mutate(
+                    drafts
+                      .filter((d) => d.selected)
+                      .map(({ selected: _s, timeDefaulted: _t, ...rest }) => rest),
+                  )
+                }
               >
                 {saveMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-                Create All
+                Create Selected ({selectedCount})
               </Button>
               <Button variant="outline" className="flex-1" onClick={() => setDrafts(null)}>
-                Discard
+                Discard All
               </Button>
             </div>
           </section>
         )}
+
       </main>
     </div>
   );
