@@ -11,7 +11,10 @@ function getOwnerToken(create: boolean): string | null {
   const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
   setCookie(OWNER_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
+    // "none" so the cookie is still sent when the app runs inside the
+    // embedded preview iframe (cross-site context). Without this the owner
+    // token is dropped and the dashboard reads back zero tasks.
+    sameSite: "none",
     secure: true,
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
